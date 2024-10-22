@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -77,9 +78,10 @@ class MainActivity : AppCompatActivity() , OnMapReadyCallback {
         } else {
             checkLocationPermission()
         }
+
     }
 
-    private val radiusInMeters = 5.0f //1f=1meter
+    private val radiusInMeters = 10.0f //1f=1meter
 
     private fun moveToCurrentLocation() {
         if (ActivityCompat.checkSelfPermission(
@@ -105,7 +107,8 @@ class MainActivity : AppCompatActivity() , OnMapReadyCallback {
                         )
 
                         loadPOIData(location.latitude, location.longitude,radiusInMeters)
-                        loadPOIData(location.latitude, location.longitude,radiusInMeters)
+                        // Set up the map click listener
+                        setupMapClickListener(location.latitude, location.longitude,radiusInMeters)
                     }
                 }
 
@@ -165,53 +168,13 @@ class MainActivity : AppCompatActivity() , OnMapReadyCallback {
             LatLng(21.0888984, 79.0813486)
         )
 
-        val poiMarkers = mutableListOf<Marker>()
-
 
         // Loop through each POI and add a marker
         pois.forEach { poi ->
             // Add a marker to the map for each POI
           //  val poiMarker = mMap.addMarker(MarkerOptions().position(poi).title("POI ${poi.latitude }, ${poi.longitude}"))
-            val poiMarker = mMap.addMarker( MarkerOptions().position(poi).title("POI ${poi.latitude }, ${poi.longitude}")
-                .snippet("My Snippet"+"\n"+"1st Line Text"+"\n"+"2nd Line Text"+"\n"+"3rd Line Text")
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
 
-            mMap.setInfoWindowAdapter(object : InfoWindowAdapter {
-                override fun getInfoWindow(arg0: Marker): View? {
-                    return null
-                }
-
-                override fun getInfoContents(marker: Marker): View? {
-                    val info = LinearLayout(applicationContext)
-                    info.orientation = LinearLayout.VERTICAL
-
-                    val title = TextView(applicationContext)
-                    title.setTextColor(Color.BLACK)
-                    title.gravity = Gravity.CENTER
-                    title.setTypeface(null, Typeface.BOLD)
-                    title.text = marker.title
-
-                    val snippet = TextView(applicationContext)
-                    snippet.setTextColor(Color.GRAY)
-                    snippet.text = marker.snippet
-
-                    info.addView(title)
-                    info.addView(snippet)
-
-                    return info
-                }
-            })
-
-            poiMarker?.let { poiMarkers.add(it) }
-
-            // Check if the current location is within the given radius of the POI
-            val isWithinRadius = arePointsWithinRadius(latitude, longitude, poi.latitude, poi.longitude, radiusInMeters)
-
-            if (isWithinRadius) {
-                Log.d("ashu", "You are within $radiusInMeters meters of the target location.")
-            } else {
-                Log.d("ashu", "You are outside the $radiusInMeters meters radius.")
-            }
+            markerOption(poi,BitmapDescriptorFactory.HUE_ORANGE)
 
 
 //            mMap.setOnMarkerClickListener { clickedMarker ->
@@ -249,7 +212,116 @@ class MainActivity : AppCompatActivity() , OnMapReadyCallback {
         }
     }
 
+    val poiMarkers = mutableListOf<Marker>()
+    var isFirst: Boolean =true
+    private fun markerOption(poi: LatLng, pinColor: Float) {
 
+        if(pinColor==BitmapDescriptorFactory.HUE_GREEN){
+
+            if (!isFirst)
+            {
+                currentMarker?.remove()
+//                poiMarkers.remove(currentMarker)
+            }
+            isFirst=false
+
+        }
+
+        currentMarker = mMap.addMarker( MarkerOptions().position(poi).title("POI ${poi.latitude }, ${poi.longitude}")
+            .snippet("My Snippet"+"\n"+"1st Line Text"+"\n"+"2nd Line Text"+"\n"+"3rd Line Text")
+            .icon(BitmapDescriptorFactory.defaultMarker(pinColor)));
+
+        mMap.setInfoWindowAdapter(object : InfoWindowAdapter {
+            override fun getInfoWindow(arg0: Marker): View? {
+                return null
+            }
+
+            override fun getInfoContents(marker: Marker): View? {
+                val info = LinearLayout(applicationContext)
+                info.orientation = LinearLayout.VERTICAL
+
+                val title = TextView(applicationContext)
+                title.setTextColor(Color.BLACK)
+                title.gravity = Gravity.CENTER
+                title.setTypeface(null, Typeface.BOLD)
+                title.text = marker.title
+
+
+                val snippet = TextView(applicationContext)
+                snippet.setTextColor(Color.GRAY)
+                snippet.text = marker.snippet
+
+                val editButton = ImageView(applicationContext)
+                editButton.setImageResource(R.drawable.icon_edit)  // Add an edit icon (make sure to have this drawable resource)
+
+                info.addView(title)
+                info.addView(snippet)
+                info.addView(editButton)
+
+                return info
+            }
+        })
+
+
+        currentMarker?.let { poiMarkers.add(it) }
+
+//        // Check if the current location is within the given radius of the POI
+//        val isWithinRadius = arePointsWithinRadius(latitude, longitude, poi.latitude, poi.longitude, radiusInMeters)
+//
+//        if (isWithinRadius) {
+//            Log.d("ashu", "You are within $radiusInMeters meters of the target location.")
+//        } else {
+//            Log.d("ashu", "You are outside the $radiusInMeters meters radius.")
+//        }
+
+    }
+
+
+    private var currentMarker: Marker? = null
+    private fun setupMapClickListener(latitude: Double, longitude: Double, radiusInMeters: Float) {
+
+        // Set a listener for map clicks
+        mMap.setOnMapClickListener { latLng ->
+
+          //  currentMarker?.remove()
+
+            // When the map is clicked, add a marker at the clicked location
+            val markerTitle = "Lat: ${latLng.latitude}, Lng: ${latLng.longitude}"
+
+
+            // Check if the current location is within the given radius of the POI
+            val isWithinRadius = arePointsWithinRadius(latitude, longitude, latLng.latitude, latLng.longitude, radiusInMeters)
+
+            if (isWithinRadius) {
+                Toast.makeText(this,"You are within $radiusInMeters meters of the target location.",Toast.LENGTH_SHORT).show()
+
+//                currentMarker = mMap.addMarker(
+////                    MarkerOptions().position(latLng).title(markerTitle)
+//                            markerOption(latLng,BitmapDescriptorFactory.HUE_ORANGE)
+//                )
+
+                markerOption(latLng,BitmapDescriptorFactory.HUE_GREEN)
+
+
+                // Get the current zoom level from the map
+                val currentZoomLevel = mMap.cameraPosition.zoom
+
+                // Move the camera to the clicked location using the current zoom level
+                val cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, currentZoomLevel)
+                mMap.animateCamera(cameraUpdate)
+
+                // Show a Toast with the clicked location coordinates
+                Toast.makeText(this, "Clicked location: $markerTitle", Toast.LENGTH_SHORT).show()
+
+
+            } else {
+                Log.d("ashu", "You are outside the $radiusInMeters meters radius.")
+                Toast.makeText(this,"You are outside the $radiusInMeters meters radius.",Toast.LENGTH_SHORT).show()
+
+            }
+
+        }
+    }
 
 
     private fun enableMyLocation() {
