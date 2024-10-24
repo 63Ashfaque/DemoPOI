@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    id("com.google.devtools.ksp") version "1.8.10-1.0.9" apply false
+
 }
 
 android {
@@ -33,6 +35,9 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {
@@ -48,5 +53,12 @@ dependencies {
 
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
+    implementation(libs.chip.navigation.bar)
+    implementation(libs.sdp.android)
+
+    implementation (libs.androidx.room.runtime)
+    annotationProcessor (libs.androidx.room.compiler)
+    ksp ("androidx.room:room-compiler:2.6.1")
+    implementation (libs.androidx.room.ktx)
 
 }
