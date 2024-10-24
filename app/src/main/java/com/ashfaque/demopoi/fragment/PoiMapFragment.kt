@@ -23,6 +23,8 @@ import com.ashfaque.demopoi.Constants.LOCATION_PERMISSION_REQUEST_CODE
 import com.ashfaque.demopoi.R
 import com.ashfaque.demopoi.Utils
 import com.ashfaque.demopoi.databinding.FragmentPoiMapBinding
+import com.ashfaque.demopoi.roomdb.DataBaseName
+import com.ashfaque.demopoi.roomdb.EntityDataClass
 import com.ashfaque.demopoi.shared_preference.SharedPreferenceManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -35,6 +37,10 @@ import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PoiMapFragment : Fragment(), OnMapReadyCallback {
 
@@ -49,7 +55,7 @@ class PoiMapFragment : Fragment(), OnMapReadyCallback {
     private var isFirst: Boolean = true
     private var currentMarker: Marker? = null
 
-
+    private lateinit var dataBase: DataBaseName
     private lateinit var sharedPreferenceManager: SharedPreferenceManager
 
     override fun onResume() {
@@ -93,6 +99,9 @@ class PoiMapFragment : Fragment(), OnMapReadyCallback {
 //        sharedPreferenceManager.clearAll()
 
 
+        //initialize dataBase var
+        dataBase = DataBaseName.getDataBase(requireContext())
+        insertUpdateNote("","","","");
 
         return mBinding!!.root
     }
@@ -278,6 +287,31 @@ class PoiMapFragment : Fragment(), OnMapReadyCallback {
     override fun onDestroyView() {
         super.onDestroyView()
         mBinding = null
+    }
+
+
+    private fun insertUpdateNote( edTitle: String, edDesc: String, tags: String, mDate: String) {
+
+        val isInsert:Boolean=true
+        GlobalScope.launch {
+            val result = if(isInsert) {
+                dataBase.interfaceDao().insertData(EntityDataClass(0, edTitle, edDesc,tags,mDate,"")).toInt()
+            } else {
+                dataBase.interfaceDao().updateData(EntityDataClass(0,edTitle, edDesc,tags,mDate,""))
+            }
+
+            if (result > 0) {
+                //when we run background that time we use withContext(dispatcher)
+                withContext(Dispatchers.Main) {
+                    Utils.showToast(requireContext(), if (isInsert) "Insert Successful" else "Update Successful")
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    Utils.showToast(requireContext(), if (isInsert)"Already Present" else "Not Update")
+                }
+            }
+        }
+
     }
 
 }
